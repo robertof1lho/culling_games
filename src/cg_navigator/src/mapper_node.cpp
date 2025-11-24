@@ -14,7 +14,7 @@ class MapperDFS : public rclcpp::Node {
 public:
     MapperDFS()
     : Node("mapper_dfs_node"),
-      H(60), W(60),
+      H(40), W(40),
       r(30), c(30),
       have_sensor(false)
     {
@@ -57,6 +57,8 @@ private:
         update(r - 1, c + 1, msg->up_right);
         update(r + 1, c - 1, msg->down_left);
         update(r + 1, c + 1, msg->down_right);
+
+        last = *msg;
     }
 
     void update(int rr, int cc, const std::string &val)
@@ -66,7 +68,8 @@ private:
 
         char v = val[0];
 
-        if (map[rr][cc] == '?') {
+        // Atualiza se era desconhecido ou se um alvo foi detectado
+        if (map[rr][cc] == '?' || v == 't') {
             map[rr][cc] = v;
             RCLCPP_INFO(this->get_logger(),
                 "[MAP] Descoberto (%d,%d) = %c", rr, cc, v);
@@ -105,6 +108,52 @@ private:
             {-1,0,"up"}, {0,1,"right"}, {1,0,"down"}, {0,-1,"left"}
         };
 
+        // Se o último sensor viu 't' em um vizinho cardinal, vá direto
+        for (auto &m : moves) {
+            int nr = r + m.dr;
+            int nc = c + m.dc;
+
+            if (!inside(nr, nc))
+                continue;
+
+            char sensed = 0;
+            if (m.name == std::string("up") && !last.up.empty()) sensed = last.up[0];
+            if (m.name == std::string("right") && !last.right.empty()) sensed = last.right[0];
+            if (m.name == std::string("down") && !last.down.empty()) sensed = last.down[0];
+            if (m.name == std::string("left") && !last.left.empty()) sensed = last.left[0];
+
+            if (sensed == 't' || map[nr][nc] == 't') {
+                RCLCPP_WARN(this->get_logger(),
+                    "[DFS] ENTRANDO NO ALVO (%d,%d) via %s",
+                    nr, nc, m.name);
+
+                send_move(m.name);
+                r = nr;
+                c = nc;
+                return;
+            }
+        }
+
+        // Priorizar alvo se ele aparecer em qualquer vizinho
+        for (auto &m : moves) {
+            int nr = r + m.dr;
+            int nc = c + m.dc;
+
+            if (!inside(nr, nc))
+                continue;
+
+            if (map[nr][nc] == 't') {
+                RCLCPP_WARN(this->get_logger(),
+                    "[DFS] ENTRANDO NO ALVO (%d,%d) via %s",
+                    nr, nc, m.name);
+
+                send_move(m.name);
+                r = nr;
+                c = nc;
+                return;
+            }
+        }
+
         // --------------------------------------------------------
         // EXPANDIR (andar para uma célula livre não visitada)
         // --------------------------------------------------------
@@ -130,17 +179,6 @@ private:
             if (visited[nr][nc] && cell != 't')
                 continue;
 
-
-            if (cell == 't') {
-                RCLCPP_WARN(this->get_logger(),
-                    "[DFS] ENTRANDO NO ALVO (%d,%d) via %s",
-                    nr, nc, m.name);
-
-                send_move(m.name);
-                r = nr;
-                c = nc;
-                return;
-            }
 
             // movimento normal
             send_move(m.name);
