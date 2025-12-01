@@ -6,6 +6,7 @@ import rclpy
 from cg_interfaces.srv import MoveCmd, GetMap, Reset
 from cg_interfaces.msg import RobotSensors
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 
 from .Maze import Maze
 from .Robot import Robot
@@ -28,7 +29,7 @@ class Game(Node):
         self.get_map_service = self.create_service(GetMap, 'get_map', self.handle_map_request)
         self.reset_service = self.create_service(Reset, 'reset', self.handle_reset_request)
         
-        self.publisher_ = self.create_publisher(RobotSensors, '/culling_games/robot_sensors', 10)
+        self.publisher_ = self.create_publisher(RobotSensors, '/culling_games/robot_sensors', qos_profile_sensor_data)
         self.timer = self.create_timer(0.5, self.publish_sensor_data)
         
         initial_maze_config = load_from_csv(self.map_path)

@@ -5,119 +5,105 @@
 #include <vector>
 #include <queue>
 #include <chrono>
-#include <iostream>
 #include <thread>
 
 using namespace std::chrono_literals;
-
-int id(int r, int c, int W) {
-    return r * W + c;
-}
 
 // Transforma vetor flat do labirinto em matrix
 std::vector<std::vector<char>> flat_to_matrix(
     const std::vector<std::string> &flat, int W, int H)
 {
+    // Variável que armazena uma matriz
     std::vector<std::vector<char>> grid(H, std::vector<char>(W));
 
+    // Monta valores da matriz de acordo como vetor flat do mapa
     for (int r = 0; r < H; r++)
         for (int c = 0; c < W; c++)
             grid[r][c] = flat[r * W + c][0];
-
+                        
     return grid;
 }
 
-// Transforma matrix do labirinto em grafo
-std::vector<std::vector<int>> build_graph(
-    const std::vector<std::vector<char>> &grid,
-    int H, int W, int &start, int &goal)
+// Algoritmo de breath firts search
+std::vector<std::pair<int,int>> bfs_path(
+    const std::vector<std::vector<char>>& grid,
+    int H, int W,
+    int sr, int sc,
+    int tr, int tc)
 {
-    std::vector<std::vector<int>> graph(H * W);
+    std::queue<std::pair<int,int>> q;
 
-    auto free_cell = [&](char v){
-        return (v == 'f' || v == 'r' || v == 't');
+    std::vector<std::vector<bool>> visited(H, std::vector<bool>(W, false));
+
+    std::vector<std::vector<std::pair<int,int>>> parent(
+        H, std::vector<std::pair<int,int>>(W, {-1, -1})
+    );
+
+    auto free_cell = [&](int r, int c){
+        return grid[r][c] == 'f' || grid[r][c] == 'r' || grid[r][c] == 't';
     };
 
-    for (int r = 0; r < H; r++) {
-        for (int c = 0; c < W; c++) {
+    visited[sr][sc] = true;
+    q.push({sr, sc});
 
-            char v = grid[r][c];
-
-            if (v == 'r') start = id(r, c, W);
-            if (v == 't') goal  = id(r, c, W);
-
-            if (!free_cell(v)) continue;
-
-            int u = id(r, c, W);
-
-            if (r > 0 && free_cell(grid[r-1][c]))
-                graph[u].push_back(id(r-1, c, W));
-            if (r+1 < H && free_cell(grid[r+1][c]))
-                graph[u].push_back(id(r+1, c, W));
-            if (c > 0 && free_cell(grid[r][c-1]))
-                graph[u].push_back(id(r, c-1, W));
-            if (c+1 < W && free_cell(grid[r][c+1]))
-                graph[u].push_back(id(r, c+1, W));
-        }
-    }
-
-    return graph;
-}
-
-// Algoritmo de breath firts search
-std::vector<int> bfs_path(
-    const std::vector<std::vector<int>>& graph,
-    int start,
-    int goal)
-{
-    std::queue<int> q;
-    std::vector<bool> visited(graph.size(), false);
-    std::vector<int> parent(graph.size(), -1);
-
-    visited[start] = true;
-    q.push(start);
+    int dr[4] = {-1, 1, 0, 0};
+    int dc[4] = {0, 0, -1, 1};
 
     while (!q.empty()) {
-        int u = q.front(); q.pop();
+        auto [r, c] = q.front(); q.pop();
 
-        if (u == goal) break;
+        if (r == tr && c == tc)
+            break;
 
-        for (int v : graph[u]) {
-            if (!visited[v]) {
-                visited[v] = true;
-                parent[v] = u;
-                q.push(v);
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr[i];
+            int nc = c + dc[i];
+
+            if (nr >= 0 && nr < H &&
+                nc >= 0 && nc < W &&
+                !visited[nr][nc] &&
+                free_cell(nr, nc))
+            {
+                visited[nr][nc] = true;
+                parent[nr][nc] = {r, c};
+                q.push({nr, nc});
             }
         }
     }
 
-    if (!visited[goal]) return {};
+    if (!visited[tr][tc]) return {};
 
-    std::vector<int> path;
-    for (int cur = goal; cur != -1; cur = parent[cur])
-        path.push_back(cur);
+    std::vector<std::pair<int,int>> path;
+    int r = tr, c = tc;
+
+    while (!(r == -1 && c == -1)) {
+        path.push_back({r, c});
+        auto p = parent[r][c];
+        r = p.first;
+        c = p.second;
+    }
 
     std::reverse(path.begin(), path.end());
     return path;
 }
 
-// Converte solução do do caminho para movimentos do robo
+
+// Converte solução do caminho para movimentos do robo
 std::vector<std::string> path_to_moves(
-    const std::vector<int>& path, int W)
+    const std::vector<std::pair<int,int>>& path)
 {
     std::vector<std::string> moves;
 
-    for (int i = 0; i < (int)path.size()-1; i++) {
-        int a = path[i];
-        int b = path[i+1];
+    for (int i = 0; i < (int)path.size() - 1; i++) {
+        int r1 = path[i].first;
+        int c1 = path[i].second;
+        int r2 = path[i+1].first;
+        int c2 = path[i+1].second;
 
-        int ra = a / W, ca = a % W;
-        int rb = b / W, cb = b % W;
-
-        if (rb == ra - 1) moves.push_back("up");
-        else if (rb == ra + 1) moves.push_back("down");
-        else if (cb == ca - 1) moves.push_back("left");
-        else if (cb == ca + 1) moves.push_back("right");
+        if (r2 == r1 - 1) moves.push_back("up");
+        else if (r2 == r1 + 1) moves.push_back("down");
+        else if (c2 == c1 - 1) moves.push_back("left");
+        else if (c2 == c1 + 1) moves.push_back("right");
     }
 
     return moves;
@@ -170,21 +156,34 @@ private:
 
         auto grid = flat_to_matrix(resp->occupancy_grid_flattened, W, H);
 
-        int start = -1, goal = -1;
-        auto graph = build_graph(grid, H, W, start, goal);
+        int sr = -1, sc = -1;
+        int tr = -1, tc = -1;
+    
+        for (int r = 0; r < H; r++){
+            for (int c = 0; c < W; c++){
+                if (grid[r][c] == 'r') {   
+                    sr = r;
+                    sc = c;
+                } else if (grid[r][c] == 't') {
+                    tr = r;
+                    tc = c;
+                }
+            }
+        }
 
-        if (start == -1 || goal == -1) {
+        if (sr == -1 || sc == -1 || tr == -1 || tc == -1) {
             RCLCPP_ERROR(this->get_logger(), "Start ou Goal não encontrados!");
             return;
         }
 
-        auto path = bfs_path(graph, start, goal);
+        auto path = bfs_path(grid, H, W, sr, sc, tr, tc);
+
         if (path.empty()) {
             RCLCPP_ERROR(this->get_logger(), "SEM CAMINHO!");
             return;
         }
 
-        auto moves = path_to_moves(path, W);
+        auto moves = path_to_moves(path);
         RCLCPP_INFO(this->get_logger(), "Executando %zu movimentos...", moves.size());
 
         send_moves(moves);
@@ -213,7 +212,8 @@ private:
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<Navigator>());
+    auto node = std::make_shared<Navigator>();
+    rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
 }

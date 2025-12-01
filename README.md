@@ -19,7 +19,39 @@ Lembre-se de "source" o workspace em qualquer novo terminal que você abrir:
 source install/setup.bash
 ```
 
-## 2. Executando o Jogo
+## 2. Navegação Automática (`cg_navigator`)
+
+Para deixar o robô andar sozinho pelo labirinto, suba o jogo em um terminal e
+execute um dos nós abaixo em outro terminal. Não esqueça do `source`:
+```bash
+source install/setup.bash
+```
+
+### 2.1 `navigator_node` (usa o mapa completo)
+
+1. Terminal 1 (jogo):
+   ```bash
+   ros2 run cg maze
+   ```
+2. Terminal 2 (auto-navegação completa):
+   ```bash
+   source install/setup.bash
+   ros2 run cg_navigator navigator_node
+   ```
+
+### 2.2 `mapper_node` (mapeia com sensores e depois navega)
+
+1. Terminal 1 (jogo):
+   ```bash
+   ros2 run cg maze
+   ```
+2. Terminal 2 (DFS para mapear, reset, BFS final até o alvo):
+   ```bash
+   source install/setup.bash
+   ros2 run cg_navigator mapper_node
+   ```
+
+## 3. Executando o Jogo
 
 O jogo principal é uma janela Pygame que exibe o labirinto e o movimento do
 robô.
@@ -47,7 +79,7 @@ Você pode especificar como o labirinto é carregado usando argumentos adicionai
     ros2 run cg maze -- --generate
     ```
 
-## 3. Controlando o Robô
+## 4. Controlando o Robô
 
 Existem duas maneiras de controlar o robô: usando o nó de teleoperação fornecido
 ou enviando chamadas de serviço.
@@ -82,7 +114,7 @@ ros2 service call /move_command cg_interfaces/srv/MoveCmd "{direction: 'up'}"
 
 Substitua `'up'` por `'down'`, `'left'` ou `'right'` para outras direções.
 
-## 4. Sensoriamento do Ambiente
+## 5. Sensoriamento do Ambiente
 
 O robô publica continuamente seus arredores imediatos em um tópico. Isso simula
 dados de sensores, mostrando o que está nas 8 células adjacentes (incluindo
@@ -100,7 +132,7 @@ ros2 topic echo /culling_games/robot_sensors
 Você verá um fluxo de mensagens mostrando o que está nas células `up`, `down`,
 `left`, `right`, `up_left`, etc., em relação ao robô.
 
-## 5. Reiniciando o Jogo
+## 6. Reiniciando o Jogo
 
 O serviço `/reset` permite reiniciar o tabuleiro do jogo. Ele suporta dois
 modos.
@@ -128,7 +160,7 @@ aleatoriamente.
 A resposta do serviço informará o nome do arquivo do novo labirinto que foi
 carregado.
 
-## 6. Obtendo os Dados Completos do Labirinto
+## 7. Obtendo os Dados Completos do Labirinto
 
 Se você quiser obter o layout de todo o labirinto atual (por exemplo, para
 construir um mapa externo), você pode usar o serviço `/get_map`.
