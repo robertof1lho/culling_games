@@ -1,7 +1,3 @@
-// ======================================================================
-//  MAPPER DFS + RESET + BFS FINAL
-// ======================================================================
-
 #include "rclcpp/rclcpp.hpp"
 #include "cg_interfaces/msg/robot_sensors.hpp"
 #include "cg_interfaces/srv/move_cmd.hpp"
@@ -16,9 +12,7 @@
 using namespace std::chrono_literals;
 
 
-// ======================================================================
-// BFS — encontra caminho no mapa
-// ======================================================================
+// BFS
 std::vector<std::pair<int,int>> bfs_path(
     const std::vector<std::vector<char>>& grid,
     int H, int W,
@@ -26,7 +20,9 @@ std::vector<std::pair<int,int>> bfs_path(
     int tr, int tc)
 {
     std::queue<std::pair<int,int>> q;
+
     std::vector<std::vector<bool>> visited(H, std::vector<bool>(W, false));
+
     std::vector<std::vector<std::pair<int,int>>> parent(
         H, std::vector<std::pair<int,int>>(W, {-1, -1}));
 
@@ -116,7 +112,7 @@ public:
         map[r][c] = 'r';
         path.push_back({r, c});
 
-        rclcpp::QoS sensor_qos = rclcpp::SensorDataQoS();
+        auto sensor_qos = rclcpp::SensorDataQoS();
 
         sensor_sub =
             this->create_subscription<cg_interfaces::msg::RobotSensors>(
@@ -151,8 +147,6 @@ void on_sensor(const cg_interfaces::msg::RobotSensors::SharedPtr msg)
     update(r - 1, c + 1, msg->up_right);
     update(r + 1, c - 1, msg->down_left);
     update(r + 1, c + 1, msg->down_right);
-
-    last = *msg;
 }
 
 // Atualiza o mapa
@@ -258,9 +252,7 @@ void step()
 
 
 
-// ======================================================================
 // RESET
-// ======================================================================
 void call_reset()
 {
     auto req = std::make_shared<cg_interfaces::srv::Reset::Request>();
@@ -272,10 +264,8 @@ void call_reset()
 
 
 
-// ======================================================================
-// BFS FINAL
-// ======================================================================
-    void run_bfs_and_execute()
+// Roda BFS no fluxo de navegação
+void run_bfs_and_execute()
 {
     if (target_r == -1) {
         RCLCPP_ERROR(this->get_logger(),
@@ -370,8 +360,6 @@ bool awaiting_reset;
 std::vector<std::vector<char>> map;
 std::vector<std::vector<bool>> visited;
 std::vector<std::pair<int,int>> path;
-
-cg_interfaces::msg::RobotSensors last;
 
 rclcpp::Client<cg_interfaces::srv::MoveCmd>::SharedPtr move_client;
 rclcpp::Client<cg_interfaces::srv::Reset>::SharedPtr reset_client;

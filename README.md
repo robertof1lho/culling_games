@@ -3,6 +3,12 @@
 Este documento fornece um tutorial sobre como construir, executar e interagir
 com o projeto Culling Games ROS 2.
 
+## Vídeo de Demonstração e Explicação dos Algoritmos
+
+Assista à demonstração do projeto e à explicação detalhada dos algoritmos de navegação no vídeo abaixo:
+
+[Link do vídeo de Demonstração e Explicação no Drive](https://drive.google.com/file/d/1ySrMYpMOAKik-tnmmJLH3cR5QuNpGbs_/view?usp=sharing)
+
 ## 1. Construindo o Workspace
 
 Antes de executar qualquer parte do projeto, você precisa construir os pacotes.
@@ -12,22 +18,16 @@ Navegue até a raiz do workspace e execute:
 colcon build
 ```
 
-Este comando irá compilar todos os pacotes (`cg`, `cg_interfaces`, `cg_teleop`).
+Este comando irá compilar todos os pacotes (`cg`, `cg_interfaces`, `cg_teleop`, `cg_navigator`).
 Lembre-se de "source" o workspace em qualquer novo terminal que você abrir:
 
 ```bash
 source install/setup.bash
 ```
 
-## 2. Navegação Automática (`cg_navigator`)
+## 2. Ponderada - Navegação Automática (`cg_navigator`)
 
-Para deixar o robô andar sozinho pelo labirinto, suba o jogo em um terminal e
-execute um dos nós abaixo em outro terminal. Não esqueça do `source`:
-```bash
-source install/setup.bash
-```
-
-### 2.1 `navigator_node` (usa o mapa completo)
+### 2.1 Parte 1 -`navigator_node` (usa o mapa completo)
 
 1. Terminal 1 (jogo):
    ```bash
@@ -39,7 +39,7 @@ source install/setup.bash
    ros2 run cg_navigator navigator_node
    ```
 
-### 2.2 `mapper_node` (mapeia com sensores e depois navega)
+### 2.2 Parte 2 -`mapper_node` (mapeia com sensores e depois navega)
 
 1. Terminal 1 (jogo):
    ```bash

@@ -71,7 +71,8 @@ std::vector<std::pair<int,int>> bfs_path(
         }
     }
 
-    if (!visited[tr][tc]) return {};
+    if (!visited[tr][tc]) 
+        return {};
 
     std::vector<std::pair<int,int>> path;
     int r = tr, c = tc;
@@ -121,7 +122,7 @@ public:
 
         timer_ = this->create_wall_timer(
             1s, std::bind(&Navigator::call_get_map, this)
-        );
+        );  
     }
 
 private:
